@@ -1,20 +1,17 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const list = document.getElementById('emailList');
-  chrome.storage.local.get('emails', data => {
-    const emails = data.emails || [];
-    if (emails.length === 0) {
-      list.innerHTML = '<li>No se encontraron emails</li>';
-    } else {
-      emails.forEach(email => {
-        const li = document.createElement('li');
-        li.textContent = email;
-        list.appendChild(li);
+document.getElementById('start').addEventListener('click', () => {
+  const file = document.getElementById('csvFile').files[0];
+  if (!file) return alert('Selecciona un archivo CSV');
+
+  Papa.parse(file, {
+    header: true,
+    worker: true,
+    complete: results => {
+      chrome.storage.local.set({ csvData: results.data, headers: results.meta.fields }, () => {
+        chrome.runtime.sendMessage({ action: 'startScraping' });
+        document.getElementById('status').textContent =
+          `Archivo cargado: ${results.data.length} filas, encabezados: ${results.meta.fields.join(', ')}`;
       });
-    }
-  });
-  document.getElementById('clear').addEventListener('click', () => {
-    chrome.storage.local.clear(() => {
-      list.innerHTML = '<li>Lista vaciada</li>';
-    });
+    },
+    error: err => alert(`Error al leer CSV: ${err.message}`)
   });
 });
